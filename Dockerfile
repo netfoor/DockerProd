@@ -1,4 +1,4 @@
-FROM python:3.11-slim AS builder
+FROM python:3.13-slim AS builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
@@ -17,7 +17,7 @@ RUN ~/.local/bin/uv sync --frozen --python=/usr/local/bin/python3
 COPY . .
 
 
-FROM python:3.11-slim AS runtime
+FROM python:3.13-slim AS runtime
 
 RUN useradd -m appuser
 USER appuser
@@ -33,4 +33,4 @@ COPY --from=builder /app .
 HEALTHCHECK --interval=30s --timeout=5s \
     CMD curl -f http://localhost:8000/health || exit 1
 
-CMD [ "gunicorn", "main:app", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000"]
+CMD [ "gunicorn", "app.main:app", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000"]
