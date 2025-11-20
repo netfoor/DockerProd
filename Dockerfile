@@ -14,14 +14,15 @@ COPY pyproject.toml uv.lock ./
 RUN ~/.local/bin/uv sync --frozen --python=/usr/local/bin/python3 && \
     ~/.local/bin/uv cache prune
 
+COPY app ./app
+
 RUN find .venv -type f -name '*.pyc' -delete && \
     find .venv -type d -name '__pycache__' -exec rm -rf {} + && \
-    find .venv -name '*.so' -delete
+    find .venv -type d -name '*.distr-info' -exec rm -rf {} + && \
+    strip --strip-unneeded .venv/bin/* || true
 
 RUN apt-get remove -y build-essential && apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
-
-COPY app ./app
 
 FROM python:3.13-slim-bookworm AS runtime
 
