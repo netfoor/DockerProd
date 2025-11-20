@@ -9,12 +9,11 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
 WORKDIR /app
 
-COPY pyproject.toml .
-COPY uv.lock .
+COPY pyproject.toml uv.lock ./
 
 RUN ~/.local/bin/uv sync --frozen --python=/usr/local/bin/python3
 
-COPY . .
+COPY app ./app
 
 
 FROM python:3.13-slim AS runtime
@@ -26,9 +25,9 @@ WORKDIR /app
 
 COPY --from=builder /app/.venv ./.venv
 
-ENV PATH="/app/.venv/bin:$PATH"
+COPY app ./app
 
-COPY --from=builder /app .
+ENV PATH="/app/.venv/bin:$PATH"
 
 HEALTHCHECK --interval=30s --timeout=5s \
     CMD curl -f http://localhost:8000/health || exit 1
