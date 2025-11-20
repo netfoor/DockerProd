@@ -44,8 +44,6 @@ ENV PATH="/app/.venv/bin:$PATH"
 ENTRYPOINT [ "/usr/bin/tini", "--" ]
 
 HEALTHCHECK --interval=30s --timeout=4s --start-period=20s --retries=3\
-HEALTHCHECK --interval=30s --timeout=4s --start-period=20s --retries=3\
     CMD curl -f http://localhost:8000/health || exit 1
 
-CMD [ "gunicorn", "app.main:app", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "--workers", "3" ]
 CMD [ "gunicorn", "app.main:app", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "--workers", "3" ]
