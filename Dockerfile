@@ -24,7 +24,7 @@ USER appuser
 
 WORKDIR /app
 
-COPY --from=builder /app/.venv app/.venv
+COPY --from=builder /app/.venv ./.venv
 
 ENV PATH="/app/.venv/bin:$PATH"
 
