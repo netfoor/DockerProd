@@ -1,7 +1,4 @@
-FROM python:3.13-slim AS builder
-
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+FROM python:3.13-slim-bookworm AS builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
@@ -14,12 +11,19 @@ WORKDIR /app
 
 COPY pyproject.toml uv.lock ./
 
-RUN ~/.local/bin/uv sync --frozen --python=/usr/local/bin/python3
+RUN ~/.local/bin/uv sync --frozen --python=/usr/local/bin/python3 && \
+    ~/.local/bin/uv cache prune
+
+RUN find .venv -type f -name '*.pyc' -delete && \
+    find .venv -type d -name '__pycache__' -exec rm -rf {} + && \
+    find .venv -name '*.so' -delete
+
+RUN apt-get remove -y build-essential && apt-get autoremove -y && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY app ./app
 
-
-FROM python:3.13-slim AS runtime
+FROM python:3.13-slim-bookworm AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
@@ -27,7 +31,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 RUN apt-get update && apt-get install -y --no-install-recommends tini && \
     rm -rf /var/lib/apt/lists/*
 
-RUN useradd -m -s /bin/bash appuser
+RUN useradd -m -s /usr/sbin/nologin appuser
 USER appuser
 
 WORKDIR /app
@@ -40,6 +44,8 @@ ENV PATH="/app/.venv/bin:$PATH"
 ENTRYPOINT [ "/usr/bin/tini", "--" ]
 
 HEALTHCHECK --interval=30s --timeout=4s --start-period=20s --retries=3\
+HEALTHCHECK --interval=30s --timeout=4s --start-period=20s --retries=3\
     CMD curl -f http://localhost:8000/health || exit 1
 
+CMD [ "gunicorn", "app.main:app", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "--workers", "3" ]
 CMD [ "gunicorn", "app.main:app", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "--workers", "3" ]
